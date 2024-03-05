@@ -1,41 +1,34 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
-import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 
 
-import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-import java.io.FileWriter;
-import java.nio.file.Files;
-
-@TeleOp(name = "_Driver_new_", group = "Pushbot")
+@TeleOp(name = "DRIVERS_TWO", group = "Pushbot")
 // @Disabled
 public class Drive_new extends LinearOpMode {
 
     HardwarePushbot robot = new HardwarePushbot();   // Use a Pushbot's hardware
+    public static int UP_POSITION = 205;
+    public static int DOWN_POSITION = 5;
+    public static int SCALES_POSITION = 30;
+    public int newTarget = UP_POSITION;
+    public int epsilont = 5;
+    public float lastAngle = 0;
 
-    static final double DRIVE_SPEED = 0.7;     // Nominal speed for better accuracy.
-    static final double TURN_SPEED = 0.5;     // Nominal half speed for better accuracy.
+    public boolean autoCorrectMod = false;
 
-    static final double HEADING_THRESHOLD = 15;      // As tight as we can make it with an integer gyro
-    static final double P_TURN_COEFF = 0.1;     // Larger is more responsive, but also less stable
-    static final double P_DRIVE_COEFF = 0.15;     // Larger is more responsive, but also less stable
-    public static final float COUNTS_PER_INCH = 1;
-    public ElapsedTime period  = new ElapsedTime();
-    public static double UP_POSITION = 100;
-    public static double DOWN_POSITION = 0;
+    public double clawCloseCof = 0.4;
+    public double clawOpenCof = 0.45;
 
 
 
@@ -44,19 +37,15 @@ public class Drive_new extends LinearOpMode {
 
         robot.init(hardwareMap);
 
-        telemetry.addData("angles = ", robot.angles);    //
+        telemetry.addData("angles = ", robot.angles);
         telemetry.update();
-
-        // Send telemetry message to alert driver that we are calibrating;
-        telemetry.addData(">", "Calibrating Gyro");    //
-        telemetry.update();
-
-
-        telemetry.addData(">", "Robot Ready.");    //
+        telemetry.addData(">", "Calibrating Gyro");
         telemetry.update();
 
 
-        // Wait for the game to start (Display Gyro value), and reset gyro before we move..
+        telemetry.addData(">", "Robot Ready.");
+        telemetry.update();
+
         while (!isStarted()) {
             telemetry.update();
         }
@@ -91,6 +80,10 @@ public class Drive_new extends LinearOpMode {
 
 
         double mode = 0;
+        int isHolder = 0;
+        double holderStartPosition = 0;
+        double holderEndPosition = 0.7;
+        boolean holderPress = false;
 
         if (opModeIsActive()) {
 
@@ -99,9 +92,6 @@ public class Drive_new extends LinearOpMode {
             while (opModeIsActive()) {
                 robot.angles = robot.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
 
-                globalY += robot.getPositionRB();
-                telemetry.addData("Position y:", globalY);
-
                 double Y = gamepad1.left_stick_y;
                 double X = -gamepad1.left_stick_x;
                 boolean kofLeft = gamepad1.left_bumper;
@@ -109,6 +99,13 @@ public class Drive_new extends LinearOpMode {
                 boolean qwerty = gamepad1.a;
                 double leftTrigger = -gamepad1.left_trigger;
                 double rightTrigger = gamepad1.right_trigger;
+                boolean holder = gamepad2.x;
+                boolean manipulatorAutoUp = gamepad2.dpad_up;
+                boolean manipulatorAutoDown = gamepad2.dpad_down;
+                boolean clawOpen = gamepad2.dpad_left;
+                boolean clawClose = gamepad2.dpad_right;
+                double upperUpDown = gamepad2.right_stick_y;
+                boolean reinitEncoder = gamepad2.a;
 
                 if (qwerty) {
                     startPoint = robot.angles.firstAngle;
@@ -120,27 +117,10 @@ public class Drive_new extends LinearOpMode {
                 Y = drive(Y, k);
                 X = drive(X, k);
                 speedTurn = -(leftTrigger + rightTrigger);
+                /*if (Math.abs(lastAngle - robot.angles.firstAngle) > 0.01 && speedTurn == 0){
+                    speedTurn = -(lastAngle - robot.angles.firstAngle) / Math.abs(lastAngle - robot.angles.firstAngle) * 0.2;
+                }*/
                 error = getError(robot.angles.firstAngle - startPoint + 45);
-//                if ((Math.abs(error) == error) == (Math.abs(angle_now) == angle_now)) {
-//                    speedTurn = Math.pow(-1, angle_now > error) * (Math.max(angle_now, error) - Math.min(angle_now, error));
-//                }
-//                if (angle_now > 0) {
-//                    if (angle_now - error > 180 || angle_now - error < 0) {
-//                        speedTurn = Math.abs(getError(angle_now - error)) / 180 * 1.5;
-//                    }
-//                    else {
-//                        speedTurn = -Math.abs(getError(angle_now - error)) / 180 * 1.5;
-//                    }
-//                }
-//                else {
-//                    if (error - angle_now > 180 || error - angle_now < 0) {
-//                        speedTurn = -Math.abs(getError(angle_now - error)) / 180 * 1.5;
-//                    }
-//                    else {
-//                        speedTurn = Math.abs(getError(angle_now - error)) / 180 * 1.5;
-//                    }
-//                }
-//
 
                 double Y1 = Y * Math.sin(error * Math.PI / 180) * Math.sqrt(2) + X * Math.cos(error * Math.PI / 180) * Math.sqrt(2);
                 double X1 = Y * Math.cos(error * Math.PI / 180) * Math.sqrt(2) - X * Math.sin(error * Math.PI / 180) * Math.sqrt(2);
@@ -173,48 +153,57 @@ public class Drive_new extends LinearOpMode {
                 robot.move(speedFrontLeft, speedFrontRight, speedBackLeft, speedbackRight);
 
 
-                double manipulatorUp = gamepad2.right_trigger;
-                double manipulatorDown = gamepad2.left_trigger;
-                boolean manipulatorAutoUp = gamepad2.dpad_up;
-                boolean manipulatorAutoDown = gamepad2.dpad_down;
-                boolean turnLeft = gamepad2.left_bumper;
-                boolean turnRight = gamepad2.right_bumper;
-                boolean clawOpen = gamepad1.dpad_left;
-                boolean clawClose = gamepad1.dpad_right;
-                double upperUpDown = gamepad1.right_stick_y;
-                double upfordown = gamepad1.left_stick_y;
+                if (holder && !holderPress){
+                    holderPress = true;
+                    if (isHolder == 0){
+                        robot.holderLeft.setPosition(holderEndPosition);
+                        robot.holderRight.setPosition(1 - holderEndPosition);
+                        isHolder = 1;
+                    }
+                    else{
+                        robot.holderLeft.setPosition(holderStartPosition);
+                        robot.holderRight.setPosition(1 - holderStartPosition);
+                        isHolder = 0;
+                    }
+                }
+                else if (!holder){
+                    holderPress = false;
+                }
 
                 if (clawClose && !clawOpen) {
-                    robot.claw.setPosition(0.4);
+                    robot.claw.setPosition(clawOpenCof);
                 } else if (!clawClose && clawOpen) {
-                    robot.claw.setPosition(0.75);
+                    robot.claw.setPosition(clawCloseCof);
+                }
+                if (reinitEncoder){
+                    if (newTarget == UP_POSITION){
+                        UP_POSITION = robot.upper.getCurrentPosition();
+                    }
+                    else if (newTarget == DOWN_POSITION){
+                        DOWN_POSITION = robot.upper.getCurrentPosition();
+                    }
+                    else if (newTarget == SCALES_POSITION){
+                        SCALES_POSITION = robot.upper.getCurrentPosition();
+                    }
+                }
+                updateEncoder(robot.upper);
+                if (Math.abs(upperUpDown) > 0.1){
+                    autoCorrectMod = false;
+                    if (robot.upper.isBusy()){
+                        robot.upper.setPower(0);
+                        robot.upper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                    }
+                    robot.upper.setPower(upperUpDown / -5);
                 }
 
-                if (turnLeft && !turnRight) {
-                    robot.turn.setPosition(1);
-                } else if (!turnLeft && turnRight) {
-                    robot.turn.setPosition(0);
-                }
                 if (manipulatorAutoUp) {
-                    encoderDrive(1, UP_POSITION, 10, robot.upper);
+                    autoCorrectMod = true;
+                    setTargetMotor(0.3, UP_POSITION, robot.upper);
                 }
                 else if (manipulatorAutoDown) {
-                    encoderDrive(1, DOWN_POSITION, 10, robot.upper);
+                    autoCorrectMod = true;
+                    setTargetMotor(0.3, DOWN_POSITION, robot.upper);
                 }
-
-                manipulatorUp = drive(manipulatorUp, k);
-                manipulatorDown = drive(manipulatorDown, k);
-                upperUpDown = drive(upperUpDown, k);
-                upfordown = drive(-upfordown, k);
-
-                if (robot.position >= 0.5 && upfordown < 0 || robot.position <= 0.8 && upfordown > 0) {
-                    robot.position += (upfordown / 70);
-                    robot.updown.setPosition(robot.position);
-                }
-                double manipulatorSpeed = manipulatorUp - manipulatorDown;
-
-                robot.upper.setPower(-upperUpDown * 0.5);
-                robot.manipulator.setPower(manipulatorSpeed);
 
                 telemetry.addData("Speed", "%5.2f:%5.2f", speedToLeft, speedToRight);
                 telemetry.addData("Y, X", "%5.2f:%5.2f", Y, X);
@@ -226,12 +215,16 @@ public class Drive_new extends LinearOpMode {
                 telemetry.addData("angles first = ", robot.angles.firstAngle);
                 telemetry.addData("SpeedR, SpeedL", "%5.2f:%5.2f", speedTurn + speedToLeft, -speedTurn + speedToRight);
                 telemetry.addData("mode", mode);
-//                telemetry.addData("left", robot.leftServo.getPosition());
-//                telemetry.addData("right", robot.rightServo.getPosition());
                 telemetry.addData("getError", getError(angle_now + 180));
                 telemetry.addData("angle_now", angle_now);
                 telemetry.addData("error", error);
+                telemetry.addData("Running to",  " %7d", newTarget);
+                telemetry.addData("Current Position",  " %7d", robot.upper.getCurrentPosition());
+                telemetry.addData("LEN", " %5f", robot.sensorRange.getDistance(DistanceUnit.MM));
+                telemetry.addData("leftHolder", "%3f", robot.holderLeft.getPosition());
+                telemetry.addData("rightHolder", "%3f", robot.holderRight.getPosition());
                 telemetry.update();
+                lastAngle = robot.angles.firstAngle;
             }
             robot.move(0, 0);
 
@@ -241,8 +234,6 @@ public class Drive_new extends LinearOpMode {
     public double getError(double targetAngle) {
 
         double robotError;
-
-        // calculate error in -179 to +180 range  (
         robotError = targetAngle;
         while (robotError > 180) robotError -= 360;
         while (robotError <= -180) robotError += 360;
@@ -273,141 +264,29 @@ public class Drive_new extends LinearOpMode {
         return gp;
     }
 
-//    public void povorot(double mode, double startPoint, boolean plus, boolean minus, double first, boolean zero) {
-//        double power1 = 0.5;
-//        robot.angles = robot.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-//        double error = getError(robot.angles.firstAngle - startPoint);
-//        double error1 = getError(robot.angles.firstAngle - startPoint + 90);
-//        double error2 = getError(robot.angles.firstAngle - startPoint - 90);
-//        if (zero) {
-//            while (opModeIsActive() && !(error <= 10 && error >= -10) && !gamepad1.dpad_down) {
-//                double power;
-//                double a = error;
-//                if (-180 <= a && a <= 0) {
-//                    power = power1;
-//                }
-//                else {
-//                    power = -power1;
-//                }
-//                robot.angles = robot.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-//                error = getError(robot.angles.firstAngle - startPoint);
-//
-//                robot.move(-power, power, -power, power);
-//
-//                telemetry.addData("error", error);
-//                telemetry.update();
-//            }
-//        }
-//
-//        if (plus && !minus) {
-//
-//            if (mode == 0) {
-//                while (opModeIsActive() && (error <= 80 || error >= 100) && !gamepad1.dpad_down) {
-//                    double power;
-//                    double a = error;
-//                    if (-90 <= a && a <= 90) {
-//                        power = power1;
-//                    }
-//                    else {
-//                        power = -power1;
-//                    }
-//                    robot.angles = robot.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-//                    error = getError(robot.angles.firstAngle - startPoint);
-//
-//                    robot.move(-power, power, -power, power);
-//
-//                    telemetry.addData("error", error);
-//                    telemetry.update();
-//                }
-//            }
-//            else {
-//                while (opModeIsActive() && (error <= getError(error1 - 10) || error >= getError(error1 + 10)) && !gamepad1.dpad_down) {
-//                    double power = power1;
-//                    robot.angles = robot.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-//                    error = getError(robot.angles.firstAngle - startPoint);
-//
-//                    robot.move(-power, power, -power, power);
-//
-//                    telemetry.addData("error", error);
-//                    telemetry.addData("error1", error1);
-//                    telemetry.update();
-//                }
-//            }
-//        }
-//        if (!plus && minus) {
-//            if (mode == 0) {
-//                while (opModeIsActive() && (error >= -80 || error <= -100) && !gamepad1.dpad_down) {
-//                    double power = 0;
-//                    double a = error;
-//                    if (-90 <= a && a <= 90) {
-//                        power = -power1;
-//                    }
-//                    else {
-//                        power = power1;
-//                    }
-//                    robot.angles = robot.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-//                    error = getError(robot.angles.firstAngle - startPoint);
-//
-//                    robot.move(-power, power, -power, power);
-//
-//                    telemetry.addData("error", error);
-//                    telemetry.update();
-//                }
-//            }
-//            else {
-//                while (opModeIsActive() && (error <= getError(error2 - 10) || error >= getError(error2 + 10)) && !gamepad1.dpad_down) {
-//                    double power = power1;
-//                    double a = error;
-//                    robot.angles = robot.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-//                    error = getError(robot.angles.firstAngle - startPoint);
-//
-//                    robot.move(power, -power, power, -power);
-//
-//                    telemetry.addData("error", error);
-//                    telemetry.addData("error1", error2);
-//                    telemetry.update();
-//                }
-//            }
-//        }
-//
-//        robot.move(0, 0);
-//
-//    }
-public void encoderDrive(double speed,
-                         double inches,
-                         double timeoutS, DcMotor motor) {
-    int newTarget;
+    public void setTargetMotor(double speed,
+                               int target, DcMotor motor) {
 
-    // Determine new target position, and pass to motor controller
-    newTarget = motor.getCurrentPosition() + (int)(inches * COUNTS_PER_INCH);
-    motor.setTargetPosition(newTarget);
+        newTarget = target;
+        motor.setTargetPosition(newTarget);
 
-    // Turn On RUN_TO_POSITION
-    motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        motor.setPower(Math.abs(speed));
 
-    // reset the timeout time and start motion.
-    period.reset();
-    motor.setPower(Math.abs(speed));
-
-    while (opModeIsActive() &&
-            (period.seconds() < timeoutS) &&
-            (motor.isBusy())) {
-
-        // Display it for the driver.
-        telemetry.addData("Running to",  " %7d :%7d", newTarget);
-        telemetry.addData("Currently at",  " at %7d :%7d",
-                motor.getCurrentPosition(), motor.getCurrentPosition());
-        telemetry.update();
     }
 
-    // Stop all motion;
-    motor.setPower(0);
+    public void updateEncoder(DcMotor motor){
+        if (!motor.isBusy()){
+            if (Math.abs(newTarget - motor.getCurrentPosition()) > epsilont && autoCorrectMod){
+                setTargetMotor(0.5, newTarget, motor);
+            }
+            else{
+                motor.setPower(0);
+                motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            }
 
-    // Turn off RUN_TO_POSITION
-    motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-    sleep(250);
-}
-
+        }
+    }
 }
 
