@@ -69,8 +69,7 @@ import java.util.List;
  * Servo channel:  Servo to open left claw:  "left_hand"
  * Servo channel:  Servo to open right claw: "right_hand"
  */
-public class HardwarePushbot
-{
+public class HardwarePushbot {
     /* Public OpMode members. */
     public DcMotor rightBack = null;
     public DcMotor leftFront = null;
@@ -102,10 +101,25 @@ public class HardwarePushbot
     public String str = null;
     public VectorF vect = null;
     public Orientation orint = null;
-
      public static final double initClawCof = 0.6;
     public double clawCloseCof = 0.4;
     public double clawOpenCof = 0.45;
+    public int epsilont = 5;
+    public int UP_POSITION = -740;
+    public int DOWN_POSITION = 0;
+    public int HALF_POSITION = (UP_POSITION - DOWN_POSITION) / 2;
+    public int SCALES_POSITION = 30;
+    public double minSpeedUpper = 0.2;
+    public double maxSpeedUpper = 1;
+    public double holderStartPosition = 0;
+    public double holderEndPosition = 0.7;
+
+    public double upperAutoSpeed = 0.2;
+
+    public double speedUpper;
+    public int newTarget = DOWN_POSITION;
+
+    public int speedAddTarget = 15;
 
     public static final String VUFORIA_KEY =
             "AVBuwuj/////AAABme3qqHtZakBEoej2qn+K61cejFDMxTrewaZmF7T0aSbPZoYBxR7OnV8UwQvv4JDD566lMwT8UeL1sgLPkkL//OTN6cSnIm5x01bCTQFQ7NX4KxvMezRPXCltLug3QzE5J9JoyCPWevWrkkSP+9ZTTI77Naab43kdLmtNF47fDThZVvp1W8t2LsGSUOdxOv7dSMrVsvDhhJZLsIJtvRFFaiiiWD5QOWlISG7780qEPpYSSfAlel39pxm4/A+wcK2Siwp9eVPY70TSUKuN/eHZ7a5ihZDJKKSsOQ2CtlzwoQKvKh79wNi/P+lY++oeFgobuHXS7pPXPjldLrtTMXAsgfXlcHcW73XSloA9EdgwFyMZ";
@@ -217,5 +231,74 @@ public class HardwarePushbot
         return leftFront.getCurrentPosition();
     }
 
+    public void setTargetMotor(double speed,
+                               int target, DcMotor motor) {
+
+        motor.setTargetPosition(target);
+
+        motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        motor.setPower(Math.abs(speed));
+
+    }
+
+    public void updateEncoder(DcMotor motor){
+        if (!motor.isBusy()){
+            if (Math.abs(newTarget - motor.getCurrentPosition()) > epsilont){
+                setTargetMotor(0.2, newTarget, motor);
+            }
+            else{
+                motor.setPower(0);
+                motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            }
+        }
+    }
+
+    public void upHolder(){
+        holderLeft.setPosition(holderStartPosition);
+        holderRight.setPosition(1 - holderStartPosition);
+    }
+    public void downHolder(){
+        holderLeft.setPosition(holderEndPosition);
+        holderRight.setPosition(1 - holderEndPosition);
+    }
+
+    public void closeClaw(){
+        claw.setPosition(clawCloseCof);
+    }
+    public void openClaw(){
+        claw.setPosition(clawOpenCof);
+    }
+
+    public void setNewDownPosition(){
+        DOWN_POSITION = upper.getCurrentPosition();
+        HALF_POSITION = (UP_POSITION - DOWN_POSITION) / 2;
+    }
+
+    public void setNewUpPosition(){
+        UP_POSITION = upper.getCurrentPosition();
+        HALF_POSITION = (UP_POSITION - DOWN_POSITION) / 2;
+    }
+
+    public void upperAutoUp(){
+        setTargetMotor(upperAutoSpeed, UP_POSITION, upper);
+    }
+    public void upperAutoDown(){
+        setTargetMotor(upperAutoSpeed, DOWN_POSITION, upper);
+    }
+
+    public void moveUpper(double speedCof){
+        speedUpper = maxSpeedUpper * Math.pow((1 - Math.abs(HALF_POSITION
+                - upper.getCurrentPosition()) / (HALF_POSITION * -1.0)), 1);
+        if (speedUpper < minSpeedUpper){
+            speedUpper = minSpeedUpper;
+        }
+        newTarget += speedAddTarget * speedCof;
+
+        setTargetMotor(speedUpper, newTarget, upper);
+    }
+    public void stopUpper(){
+        newTarget = upper.getCurrentPosition();
+        setTargetMotor(upperAutoSpeed * 2, newTarget, upper);
+    }
 }
 
