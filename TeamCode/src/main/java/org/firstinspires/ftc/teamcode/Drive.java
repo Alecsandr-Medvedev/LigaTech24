@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.util.Range;
 
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -15,27 +14,16 @@ public class Drive extends LinearOpMode {
 
     public boolean autoMod = false;
 
-
-    double max;
     double error;
 
-    double speedToLeft;
-    double speedToRight;
     double speedTurn = 0;
-
-    double speedFrontLeft;
-    double speedBackLeft;
-    double speedFrontRight;
-    double speedbackRight;
-
 
     double k = 0.1;
     double speedKof = 0.5;
-    double startPoint = 0;
-
-    double angle_now = 45;
     int isHolder = 0;
     boolean holderPress = false;
+
+    boolean isAutoDriveMod = false;
 
     @Override
     public void runOpMode() {}
@@ -43,7 +31,8 @@ public class Drive extends LinearOpMode {
     public void gyroDrive(double Y, double X, boolean kofLeft, boolean kofRight, boolean qwerty,
                           double leftTrigger, double rightTrigger, boolean holder,
                           boolean manipulatorAutoUp, boolean manipulatorAutoDown, boolean clawOpen,
-                          boolean clawClose, double upperUpDown, boolean reInitEncoder, HardwarePushbot robot) {
+                          boolean clawClose, double upperUpDown, boolean reInitEncoder,
+                          boolean setAutoGo, HardwarePushbot robot) {
         boolean isReInitUpPos = (reInitEncoder && manipulatorAutoUp);
         boolean isReInitDownPos = (reInitEncoder && manipulatorAutoDown);
         if (isReInitUpPos){
@@ -52,15 +41,33 @@ public class Drive extends LinearOpMode {
         if (isReInitDownPos){
             manipulatorAutoDown = false;
         }
+        if (setAutoGo){
+            isAutoDriveMod = true;
+            robot.setMoveTo(robot.getPositionLF() + 1000);
+        }
+        else if ((Y != 0) || (X != 0) || leftTrigger != 0 || rightTrigger != 0) {
+            isAutoDriveMod = false;
+        }
         robot.angles = robot.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
 
         if (qwerty) {
-            startPoint = robot.angles.firstAngle;
+            robot.changeStartAngle();
         }
+        if (isAutoDriveMod){
+            robot.updateAutoMove();
+        }
+        else {
+            speedKof = settingKof(kofLeft, kofRight, speedKof);
+            Y = checkZone(Y, k);
+            X = checkZone(X, k);
 
-        move(X, Y, qwerty, kofLeft, kofRight, rightTrigger, leftTrigger, robot);
-        speedKof = settingKof(kofLeft, kofRight, speedKof);
-        robot.Move(speedKof);
+            speedTurn = -(leftTrigger + rightTrigger);
+            if (Math.abs(lastAngle - robot.angles.firstAngle) > 0.01 && speedTurn == 0){
+                speedTurn = (lastAngle - robot.angles.firstAngle) / Math.abs(lastAngle - robot.angles.firstAngle) * 0.2;
+            }
+            speedTurn = checkZone(speedTurn, k) * speedKof;
+            robot.Move(speedKof, Y, X, speedTurn);
+        }
 
         if (holder && !holderPress){
             holderPress = true;
@@ -126,65 +133,12 @@ public class Drive extends LinearOpMode {
         telemetry.addData("leftHolder", "%3f", robot.holderLeft.getPosition());
         telemetry.addData("rightHolder", "%3f", robot.holderRight.getPosition());
         telemetry.addData("positionC", robot.getPositionLF());
+        telemetry.addData("targetM", robot.targetMoveRobot);
+        telemetry.addData("distanceC", (robot.targetMoveRobot - robot.getPositionLF()));
+
         telemetry.update();
         lastAngle = robot.angles.firstAngle;
 
-    }
-
-    public void move(double X, double Y, boolean qwerty, boolean kofLeft, boolean kofRight,
-                     double rightTrigger, double leftTrigger, HardwarePushbot robot){
-
-        Y = checkZone(Y, k);
-        X = checkZone(X, k);
-        speedTurn = -(leftTrigger + rightTrigger);
-        /*if (Math.abs(lastAngle - robot.angles.firstAngle) > 0.01 && speedTurn == 0){
-            speedTurn = -(lastAngle - robot.angles.firstAngle) / Math.abs(lastAngle - robot.angles.firstAngle) * 0.2;
-        }*/
-        error = getError(robot.angles.firstAngle - startPoint + 45);
-
-        double Y1 = Y * Math.sin(error * Math.PI / 180) * Math.sqrt(2) + X * Math.cos(error * Math.PI / 180) * Math.sqrt(2);
-        double X1 = Y * Math.cos(error * Math.PI / 180) * Math.sqrt(2) - X * Math.sin(error * Math.PI / 180) * Math.sqrt(2);
-        speedToLeft = X1;
-        speedToRight = Y1;
-
-        max = Math.max(Math.abs(speedToLeft), Math.abs(speedToRight));
-        if (max > 1.0) {
-            speedToLeft /= max;
-            speedToRight /= max;
-        }
-        speedToLeft = speedNorm(speedKof, speedToLeft);
-        speedToRight = speedNorm(speedKof, speedToRight);
-        speedTurn = checkZone(speedTurn, k) * speedKof;
-
-
-        speedFrontLeft = speedTurn + speedToRight;
-        speedBackLeft = speedTurn + speedToLeft;
-        speedFrontRight = -speedTurn + speedToLeft;
-        speedbackRight = -speedTurn + speedToRight;
-
-        max = Math.max(Math.abs(speedFrontLeft), Math.max(Math.abs(speedFrontRight), Math.max(Math.abs(speedbackRight), Math.abs(speedBackLeft))));
-        if (max > 1.0) {
-            speedFrontLeft /= max;
-            speedBackLeft /= max;
-            speedFrontRight /= max;
-            speedbackRight /= max;
-        }
-
-        robot.move(speedFrontLeft, speedFrontRight, speedBackLeft, speedbackRight);
-    }
-
-
-    public double getError(double targetAngle) {
-
-        double robotError;
-        robotError = targetAngle;
-        while (robotError > 180) robotError -= 360;
-        while (robotError <= -180) robotError += 360;
-        return robotError;
-    }
-
-    public double speedNorm(double koef, double speed) {
-        return Range.clip(speed, -1, 1) * koef;
     }
 
     public double settingKof(boolean kofLeft, boolean kofRight, double speed) {

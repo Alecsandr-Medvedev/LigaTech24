@@ -39,6 +39,7 @@ import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
 import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
@@ -98,11 +99,13 @@ public class HardwarePushbot {
 
     public double speedUpper;
     public int newTargetUpper = DOWN_POSITION;
-
     public int speedAddTargetUpper = 15;
 
+    public int targetMoveRobot = 0;
     public int v = 0;
     public static final double k = 12 * 2;
+
+    private double startAngel = 0;
 
 
     /* local OpMode members. */
@@ -276,8 +279,67 @@ public class HardwarePushbot {
         setTargetMotor(upperAutoSpeed * 2, newTargetUpper, upper);
     }
 
-    public void Move(double speedKof){
+    public void Move(double speedKof, double Y, double X, double speedTurn){
+        double angel = getErrorAngel();
+        double speedToY = Y * Math.sin(angel * Math.PI / 180) * Math.sqrt(2) + X * Math.cos(angel * Math.PI / 180) * Math.sqrt(2);
+        double speedToX = Y * Math.cos(angel * Math.PI / 180) * Math.sqrt(2) - X * Math.sin(angel * Math.PI / 180) * Math.sqrt(2);
+        double max = Math.max(Math.abs(speedToY), Math.abs(speedToX));
+        if (max > 1.0) {
+            speedToY /= max;
+            speedToX /= max;
+        }
+        speedToY = speedNorm(speedKof, speedToY);
+        speedToX = speedNorm(speedKof, speedToX);
+        double speedFrontLeft = speedTurn + speedToX;
+        double speedBackLeft = speedTurn + speedToY;
+        double speedFrontRight = -speedTurn + speedToY;
+        double speedbackRight = -speedTurn + speedToX;
+
+        max = Math.max(Math.abs(speedFrontLeft), Math.max(Math.abs(speedFrontRight), Math.max(Math.abs(speedbackRight), Math.abs(speedBackLeft))));
+        if (max > 1.0) {
+            speedFrontLeft /= max;
+            speedBackLeft /= max;
+            speedFrontRight /= max;
+            speedbackRight /= max;
+        }
+
+        move(speedFrontLeft, speedFrontRight, speedBackLeft, speedbackRight);
+    }
+
+    public double speedNorm(double koef, double speed) {
+        return Range.clip(speed, -1, 1) * koef;
+    }
+
+    public void setMoveTo(int position){
+        targetMoveRobot = position;
+    }
+    public void setMove(int length){
+        targetMoveRobot += length;
+    }
+
+    public void updateAutoMove(){
+        if (Math.abs(targetMoveRobot - getPositionLF()) > 100){
+
+            Move(0.3, 0, speedNorm(1, (-getPositionLF() + targetMoveRobot)), 0);
+        }
+        else {
+            Move(0, 0, 0, 0);
+        }
 
     }
+
+    public double getErrorAngel() {
+
+        double robotError;
+        robotError = angles.firstAngle - startAngel + 45;
+        while (robotError > 180) robotError -= 360;
+        while (robotError <= -180) robotError += 360;
+        return robotError;
+    }
+
+    public void changeStartAngle(){
+        startAngel = angles.firstAngle;
+    }
+
 }
 

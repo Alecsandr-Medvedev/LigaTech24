@@ -43,8 +43,10 @@ public class DriveForOne extends Drive {
                 boolean clawClose = gamepad1.dpad_right;
                 double upperUpDown = gamepad1.right_stick_y;
                 boolean reInitEncoder = gamepad1.y;
+                boolean setAutoGo = gamepad1.b;
                 gyroDrive(Y, X, kofLeft, kofRight, qwerty, leftTrigger, rightTrigger, holder,
-                        manipulatorAutoUp, manipulatorAutoDown, clawOpen, clawClose, upperUpDown, reInitEncoder, robot);
+                        manipulatorAutoUp, manipulatorAutoDown, clawOpen, clawClose, upperUpDown,
+                        reInitEncoder, setAutoGo, robot);
             }
         }
     }
