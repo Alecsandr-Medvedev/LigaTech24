@@ -3,8 +3,6 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 
@@ -20,18 +18,19 @@ public class Drive extends LinearOpMode {
     HardwarePushbot robot = new HardwarePushbot();   // Use a Pushbot's hardware
     public static int UP_POSITION = -740;
     public static int DOWN_POSITION = 0;
+    public static int HALF_POSITION = (UP_POSITION - DOWN_POSITION) / 2;
     public static int SCALES_POSITION = 30;
     public int newTarget = DOWN_POSITION;
     public int epsilont = 5;
     public float lastAngle = 0;
 
-    public boolean autoCorrectMod = false;
+    public boolean autoMod = false;
 
     public double clawCloseCof = 0.4;
     public double clawOpenCof = 0.45;
 
-
-    public int speedUpper = 10;
+    public double minSpeedUpper = 0.2;
+    public double maxSpeedUpper = 1;
     @Override
     public void runOpMode() {
 
@@ -84,6 +83,7 @@ public class Drive extends LinearOpMode {
         double holderStartPosition = 0;
         double holderEndPosition = 0.7;
         boolean holderPress = false;
+        double speedUpper = minSpeedUpper;
 
         if (opModeIsActive()) {
 
@@ -105,7 +105,16 @@ public class Drive extends LinearOpMode {
                 boolean clawOpen = gamepad1.dpad_left;
                 boolean clawClose = gamepad1.dpad_right;
                 double upperUpDown = gamepad1.right_stick_y;
-                boolean reinitEncoder = gamepad1.y;
+                boolean reInitEncoder = gamepad1.y;
+
+                boolean isReInitUpPos = (reInitEncoder && manipulatorAutoUp);
+                boolean isReInitDownPos = (reInitEncoder && manipulatorAutoDown);
+                if (isReInitUpPos){
+                    manipulatorAutoUp = false;
+                }
+                if (isReInitDownPos){
+                    manipulatorAutoDown = false;
+                }
 
                 if (qwerty) {
                     startPoint = robot.angles.firstAngle;
@@ -175,37 +184,40 @@ public class Drive extends LinearOpMode {
                 } else if (!clawClose && clawOpen) {
                     robot.claw.setPosition(clawCloseCof);
                 }
-                if (reinitEncoder){
-                    if (newTarget == UP_POSITION){
-                        UP_POSITION = robot.upper.getCurrentPosition();
-                    }
-                    else if (newTarget == DOWN_POSITION){
-                        DOWN_POSITION = robot.upper.getCurrentPosition();
-                    }
-                    else if (newTarget == SCALES_POSITION){
-                        SCALES_POSITION = robot.upper.getCurrentPosition();
-                    }
+                if (isReInitDownPos){
+                    DOWN_POSITION = robot.upper.getCurrentPosition();
+                    HALF_POSITION = (UP_POSITION - DOWN_POSITION) / 2;
+                }
+                if (isReInitUpPos){
+                    UP_POSITION = robot.upper.getCurrentPosition();
+                    HALF_POSITION = (UP_POSITION - DOWN_POSITION) / 2;
                 }
                 updateEncoder(robot.upper);
                 if (Math.abs(upperUpDown) > 0.1){
-                    newTarget += upperUpDown * speedUpper;
-                    setTargetMotor(0.5, newTarget, robot.upper);
+                    autoMod = false;
+                    speedUpper = maxSpeedUpper * Math.pow((1 - Math.abs(HALF_POSITION - robot.upper.getCurrentPosition()) / (HALF_POSITION * -1.0)), 1);
+                    if (speedUpper < minSpeedUpper){
+                        speedUpper = minSpeedUpper;
+                    }
+                    newTarget += 15 * upperUpDown;
+
+                    setTargetMotor(speedUpper, newTarget, robot.upper);
                 }
-                else{
+                else if (! autoMod){
                     newTarget = robot.upper.getCurrentPosition();
                     setTargetMotor(0.5, newTarget, robot.upper);
                 }
 
                 if (manipulatorAutoUp) {
-//                    autoCorrectMod = true;
+                    autoMod = true;
                     setTargetMotor(0.2, UP_POSITION, robot.upper);
                 }
                 else if (manipulatorAutoDown) {
-//                    autoCorrectMod = true;
+                    autoMod = true;
                     setTargetMotor(0.2, DOWN_POSITION, robot.upper);
                 }
 
-                telemetry.addData("Speed", "%5.2f:%5.2f", speedToLeft, speedToRight);
+               /* telemetry.addData("Speed", "%5.2f:%5.2f", speedToLeft, speedToRight);
                 telemetry.addData("Y, X", "%5.2f:%5.2f", Y, X);
                 telemetry.addData("Y1, X1", "%5.2f:%5.2f", Y1, X1);
                 telemetry.addData("speedFrontLeft, speedFrontRight", "%5.2f:%5.2f", speedFrontLeft, speedFrontRight);
@@ -217,7 +229,12 @@ public class Drive extends LinearOpMode {
                 telemetry.addData("mode", mode);
                 telemetry.addData("getError", getError(angle_now + 180));
                 telemetry.addData("angle_now", angle_now);
-                telemetry.addData("error", error);
+                telemetry.addData("error", error);*/
+                telemetry.addData("UP position", "%7d", UP_POSITION);
+                telemetry.addData("DOWN position", "%7d", DOWN_POSITION);
+                telemetry.addData("HALF position", "%7d", HALF_POSITION);
+                telemetry.addData("dd", "%6f", (1 - Math.abs(HALF_POSITION - robot.upper.getCurrentPosition()) / (HALF_POSITION * -1.0)));
+                telemetry.addData("Speed upper", "%7f", speedUpper);
                 telemetry.addData("Running to",  " %7d", newTarget);
                 telemetry.addData("Current Position",  " %7d", robot.upper.getCurrentPosition());
                 telemetry.addData("LEN", " %5f", robot.sensorRange.getDistance(DistanceUnit.MM));
