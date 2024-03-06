@@ -37,38 +37,30 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
 import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
-import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * This is NOT an opmode.
- *
  * This class can be used to define all the specific hardware for a single robot.
  * In this case that robot is a Pushbot.
  * See PushbotTeleopTank_Iterative and others classes starting with "Pushbot" for usage examples.
- *
  * This hardware class assumes the following device names have been configured on the robot:
  * Note:  All names are lower case and some have single spaces between words.
- *
  * Motor channel:  Left  drive motor:        "left_drive"
  * Motor channel:  Right drive motor:        "right_drive"
  * Motor channel:  Manipulator drive motor:  "left_arm"
  * Servo channel:  Servo to open left claw:  "left_hand"
  * Servo channel:  Servo to open right claw: "right_hand"
  */
+
 public class HardwarePushbot {
     /* Public OpMode members. */
     public DcMotor rightBack = null;
@@ -83,21 +75,10 @@ public class HardwarePushbot {
     public Servo holderLeft = null;
     public DistanceSensor sensorRange;
 
-    public double position = 0.6;
-
-    public DigitalChannel btnManipulator = null;
-
     public BNO055IMU imu = null;
     public Orientation angles;
-    public Acceleration gravity;
-
-    public WebcamName webcamName = null;
-    public OpenGLMatrix lastLocation   = null;
-    public VuforiaLocalizer vuforia    = null;
     public VuforiaTrackables targets   = null;
     public VuforiaTrackables targets_new   = null;
-    public boolean targetVisible       = false;
-
     public String str = null;
     public VectorF vect = null;
     public Orientation orint = null;
@@ -108,7 +89,6 @@ public class HardwarePushbot {
     public int UP_POSITION = -740;
     public int DOWN_POSITION = 0;
     public int HALF_POSITION = (UP_POSITION - DOWN_POSITION) / 2;
-    public int SCALES_POSITION = 30;
     public double minSpeedUpper = 0.2;
     public double maxSpeedUpper = 1;
     public double holderStartPosition = 0;
@@ -120,11 +100,6 @@ public class HardwarePushbot {
     public int newTarget = DOWN_POSITION;
 
     public int speedAddTarget = 15;
-
-    public static final String VUFORIA_KEY =
-            "AVBuwuj/////AAABme3qqHtZakBEoej2qn+K61cejFDMxTrewaZmF7T0aSbPZoYBxR7OnV8UwQvv4JDD566lMwT8UeL1sgLPkkL//OTN6cSnIm5x01bCTQFQ7NX4KxvMezRPXCltLug3QzE5J9JoyCPWevWrkkSP+9ZTTI77Naab43kdLmtNF47fDThZVvp1W8t2LsGSUOdxOv7dSMrVsvDhhJZLsIJtvRFFaiiiWD5QOWlISG7780qEPpYSSfAlel39pxm4/A+wcK2Siwp9eVPY70TSUKuN/eHZ7a5ihZDJKKSsOQ2CtlzwoQKvKh79wNi/P+lY++oeFgobuHXS7pPXPjldLrtTMXAsgfXlcHcW73XSloA9EdgwFyMZ";
-
-    public List<VuforiaTrackable> allTrackables = new ArrayList<VuforiaTrackable>();
 
     public int v = 0;
     public static final double k = 12 * 2;
