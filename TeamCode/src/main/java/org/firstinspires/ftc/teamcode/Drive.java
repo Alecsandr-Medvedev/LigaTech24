@@ -52,16 +52,87 @@ public class Drive extends LinearOpMode {
         if (isReInitDownPos){
             manipulatorAutoDown = false;
         }
-
-
         robot.angles = robot.imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
 
         if (qwerty) {
             startPoint = robot.angles.firstAngle;
         }
 
+        move(X, Y, qwerty, kofLeft, kofRight, rightTrigger, leftTrigger, robot);
         speedKof = settingKof(kofLeft, kofRight, speedKof);
-        angle_now = getError(angle_now - (rightTrigger + leftTrigger));
+        robot.Move(speedKof);
+
+        if (holder && !holderPress){
+            holderPress = true;
+            if (isHolder == 0){
+                robot.downHolder();
+                isHolder = 1;
+            }
+            else{
+                robot.upHolder();
+                isHolder = 0;
+            }
+        }
+        else if (!holder){
+            holderPress = false;
+        }
+
+        if (clawClose && !clawOpen) {
+            robot.openClaw();
+        } else if (!clawClose && clawOpen) {
+            robot.closeClaw();
+        }
+        robot.setNewPositionUpper(isReInitDownPos, isReInitUpPos);
+        robot.updateEncoder(robot.upper);
+
+        if (Math.abs(upperUpDown) > 0.1){
+            autoMod = false;
+            robot.moveUpper(upperUpDown);
+        }
+        else if (! autoMod){
+            robot.stopUpper();
+        }
+
+        if (manipulatorAutoUp) {
+            autoMod = true;
+            robot.upperAutoUp();
+        }
+        else if (manipulatorAutoDown) {
+            autoMod = true;
+            robot.upperAutoDown();
+        }
+
+       /* telemetry.addData("Speed", "%5.2f:%5.2f", speedToLeft, speedToRight);
+        telemetry.addData("Y, X", "%5.2f:%5.2f", Y, X);
+        telemetry.addData("Y1, X1", "%5.2f:%5.2f", Y1, X1);
+        telemetry.addData("speedFrontLeft, speedFrontRight", "%5.2f:%5.2f", speedFrontLeft, speedFrontRight);
+        telemetry.addData("speedBackLeft, speedbackRight", "%5.2f:%5.2f", speedBackLeft, speedbackRight);
+        telemetry.addData("SpeedTurn", speedTurn);
+        telemetry.addData("angles = ", robot.angles);
+        telemetry.addData("angles first = ", robot.angles.firstAngle);
+        telemetry.addData("SpeedR, SpeedL", "%5.2f:%5.2f", speedTurn + speedToLeft, -speedTurn + speedToRight);
+        telemetry.addData("mode", mode);
+        telemetry.addData("getError", getError(angle_now + 180));
+        telemetry.addData("angle_now", angle_now);
+        telemetry.addData("error", error);*/
+        telemetry.addData("UP position", "%7d", robot.UP_POSITION);
+        telemetry.addData("DOWN position", "%7d", robot.DOWN_POSITION);
+        telemetry.addData("HALF position", "%7d", robot.HALF_POSITION);
+        telemetry.addData("dd", "%6f", (1 - Math.abs(robot.HALF_POSITION - robot.upper.getCurrentPosition()) / (robot.HALF_POSITION * -1.0)));
+        telemetry.addData("Speed upper", "%7f", robot.speedUpper);
+        telemetry.addData("Running to",  " %7d", robot.newTargetUpper);
+        telemetry.addData("Current Position",  " %7d", robot.upper.getCurrentPosition());
+        telemetry.addData("LEN", " %5f", robot.sensorRange.getDistance(DistanceUnit.MM));
+        telemetry.addData("leftHolder", "%3f", robot.holderLeft.getPosition());
+        telemetry.addData("rightHolder", "%3f", robot.holderRight.getPosition());
+        telemetry.addData("positionC", robot.getPositionLF());
+        telemetry.update();
+        lastAngle = robot.angles.firstAngle;
+
+    }
+
+    public void move(double X, double Y, boolean qwerty, boolean kofLeft, boolean kofRight,
+                     double rightTrigger, double leftTrigger, HardwarePushbot robot){
 
         Y = checkZone(Y, k);
         X = checkZone(X, k);
@@ -100,80 +171,8 @@ public class Drive extends LinearOpMode {
         }
 
         robot.move(speedFrontLeft, speedFrontRight, speedBackLeft, speedbackRight);
-
-
-        if (holder && !holderPress){
-            holderPress = true;
-            if (isHolder == 0){
-                robot.downHolder();
-                isHolder = 1;
-            }
-            else{
-                robot.upHolder();
-                isHolder = 0;
-            }
-        }
-        else if (!holder){
-            holderPress = false;
-        }
-
-        if (clawClose && !clawOpen) {
-            robot.openClaw();
-        } else if (!clawClose && clawOpen) {
-            robot.closeClaw();
-        }
-        if (isReInitDownPos){
-            robot.setNewDownPosition();
-        }
-        if (isReInitUpPos){
-            robot.setNewUpPosition();
-        }
-        robot.updateEncoder(robot.upper);
-
-        if (Math.abs(upperUpDown) > 0.1){
-            autoMod = false;
-            robot.moveUpper(upperUpDown);
-        }
-        else if (! autoMod){
-            robot.stopUpper();
-        }
-
-        if (manipulatorAutoUp) {
-            autoMod = true;
-            robot.upperAutoUp();
-        }
-        else if (manipulatorAutoDown) {
-            autoMod = true;
-            robot.upperAutoDown();
-        }
-
-       /* telemetry.addData("Speed", "%5.2f:%5.2f", speedToLeft, speedToRight);
-        telemetry.addData("Y, X", "%5.2f:%5.2f", Y, X);
-        telemetry.addData("Y1, X1", "%5.2f:%5.2f", Y1, X1);
-        telemetry.addData("speedFrontLeft, speedFrontRight", "%5.2f:%5.2f", speedFrontLeft, speedFrontRight);
-        telemetry.addData("speedBackLeft, speedbackRight", "%5.2f:%5.2f", speedBackLeft, speedbackRight);
-        telemetry.addData("SpeedTurn", speedTurn);
-        telemetry.addData("angles = ", robot.angles);
-        telemetry.addData("angles first = ", robot.angles.firstAngle);
-        telemetry.addData("SpeedR, SpeedL", "%5.2f:%5.2f", speedTurn + speedToLeft, -speedTurn + speedToRight);
-        telemetry.addData("mode", mode);
-        telemetry.addData("getError", getError(angle_now + 180));
-        telemetry.addData("angle_now", angle_now);
-        telemetry.addData("error", error);*/
-        telemetry.addData("UP position", "%7d", robot.UP_POSITION);
-        telemetry.addData("DOWN position", "%7d", robot.DOWN_POSITION);
-        telemetry.addData("HALF position", "%7d", robot.HALF_POSITION);
-        telemetry.addData("dd", "%6f", (1 - Math.abs(robot.HALF_POSITION - robot.upper.getCurrentPosition()) / (robot.HALF_POSITION * -1.0)));
-        telemetry.addData("Speed upper", "%7f", robot.speedUpper);
-        telemetry.addData("Running to",  " %7d", robot.newTarget);
-        telemetry.addData("Current Position",  " %7d", robot.upper.getCurrentPosition());
-        telemetry.addData("LEN", " %5f", robot.sensorRange.getDistance(DistanceUnit.MM));
-        telemetry.addData("leftHolder", "%3f", robot.holderLeft.getPosition());
-        telemetry.addData("rightHolder", "%3f", robot.holderRight.getPosition());
-        telemetry.update();
-        lastAngle = robot.angles.firstAngle;
-
     }
+
 
     public double getError(double targetAngle) {
 

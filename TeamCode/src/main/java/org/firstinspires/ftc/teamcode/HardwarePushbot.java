@@ -97,9 +97,9 @@ public class HardwarePushbot {
     public double upperAutoSpeed = 0.2;
 
     public double speedUpper;
-    public int newTarget = DOWN_POSITION;
+    public int newTargetUpper = DOWN_POSITION;
 
-    public int speedAddTarget = 15;
+    public int speedAddTargetUpper = 15;
 
     public int v = 0;
     public static final double k = 12 * 2;
@@ -218,8 +218,8 @@ public class HardwarePushbot {
 
     public void updateEncoder(DcMotor motor){
         if (!motor.isBusy()){
-            if (Math.abs(newTarget - motor.getCurrentPosition()) > epsilont){
-                setTargetMotor(0.2, newTarget, motor);
+            if (Math.abs(newTargetUpper - motor.getCurrentPosition()) > epsilont){
+                setTargetMotor(0.2, newTargetUpper, motor);
             }
             else{
                 motor.setPower(0);
@@ -244,13 +244,13 @@ public class HardwarePushbot {
         claw.setPosition(clawOpenCof);
     }
 
-    public void setNewDownPosition(){
-        DOWN_POSITION = upper.getCurrentPosition();
-        HALF_POSITION = (UP_POSITION - DOWN_POSITION) / 2;
-    }
-
-    public void setNewUpPosition(){
-        UP_POSITION = upper.getCurrentPosition();
+    public void setNewPositionUpper(boolean up, boolean down){
+        if (up){
+            UP_POSITION = upper.getCurrentPosition();
+        }
+        if (down){
+            DOWN_POSITION = upper.getCurrentPosition();
+        }
         HALF_POSITION = (UP_POSITION - DOWN_POSITION) / 2;
     }
 
@@ -267,13 +267,17 @@ public class HardwarePushbot {
         if (speedUpper < minSpeedUpper){
             speedUpper = minSpeedUpper;
         }
-        newTarget += speedAddTarget * speedCof;
+        newTargetUpper += speedAddTargetUpper * speedCof;
 
-        setTargetMotor(speedUpper, newTarget, upper);
+        setTargetMotor(speedUpper, newTargetUpper, upper);
     }
     public void stopUpper(){
-        newTarget = upper.getCurrentPosition();
-        setTargetMotor(upperAutoSpeed * 2, newTarget, upper);
+        newTargetUpper = upper.getCurrentPosition();
+        setTargetMotor(upperAutoSpeed * 2, newTargetUpper, upper);
+    }
+
+    public void Move(double speedKof){
+
     }
 }
 
