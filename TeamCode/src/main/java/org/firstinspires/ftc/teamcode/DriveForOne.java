@@ -30,7 +30,7 @@ public class DriveForOne extends Drive {
             robot.move(0, 0);
             while (opModeIsActive()) {
                 double Y = gamepad1.left_stick_y;
-                double X = -gamepad1.left_stick_x;
+                double X = gamepad1.left_stick_x;
                 boolean kofLeft = gamepad1.left_bumper;
                 boolean kofRight = gamepad1.right_bumper;
                 boolean qwerty = gamepad1.a;
@@ -46,7 +46,7 @@ public class DriveForOne extends Drive {
                 boolean setAutoGo = gamepad1.b;
                 gyroDrive(Y, X, kofLeft, kofRight, qwerty, leftTrigger, rightTrigger, holder,
                         manipulatorAutoUp, manipulatorAutoDown, clawOpen, clawClose, upperUpDown,
-                        reInitEncoder, setAutoGo, robot);
+                        reInitEncoder, setAutoGo, false, robot);
             }
         }
     }

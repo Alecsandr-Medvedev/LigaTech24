@@ -44,9 +44,10 @@ public class DriveForTwo extends Drive {
                 double upperUpDown = gamepad2.right_stick_y;
                 boolean reInitEncoder = gamepad2.a;
                 boolean setAutoGo = gamepad1.b;
+                boolean exitBorder = gamepad2.y;
                 gyroDrive(Y, X, kofLeft, kofRight, qwerty, leftTrigger, rightTrigger, holder,
                         manipulatorAutoUp, manipulatorAutoDown, clawOpen, clawClose, upperUpDown,
-                        reInitEncoder, setAutoGo, robot);
+                        reInitEncoder, setAutoGo, exitBorder, robot);
             }
         }
     }

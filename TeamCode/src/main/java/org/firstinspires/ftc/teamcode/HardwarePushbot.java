@@ -83,7 +83,7 @@ public class HardwarePushbot {
     public String str = null;
     public VectorF vect = null;
     public Orientation orint = null;
-     public static final double initClawCof = 0.6;
+     public static final double initClawCof = 0.9;
     public double clawCloseCof = 0.4;
     public double clawOpenCof = 0.45;
     public int epsilont = 5;
@@ -247,7 +247,7 @@ public class HardwarePushbot {
         claw.setPosition(clawOpenCof);
     }
 
-    public void setNewPositionUpper(boolean up, boolean down){
+    public void setNewPositionUpper(boolean down, boolean up){
         if (up){
             UP_POSITION = upper.getCurrentPosition();
         }
@@ -258,19 +258,30 @@ public class HardwarePushbot {
     }
 
     public void upperAutoUp(){
+        newTargetUpper = UP_POSITION;
         setTargetMotor(upperAutoSpeed, UP_POSITION, upper);
     }
     public void upperAutoDown(){
+        newTargetUpper = DOWN_POSITION;
         setTargetMotor(upperAutoSpeed, DOWN_POSITION, upper);
     }
 
-    public void moveUpper(double speedCof){
+    public void moveUpper(double speedCof, boolean exitBorder){
         speedUpper = maxSpeedUpper * Math.pow((1 - Math.abs(HALF_POSITION
                 - upper.getCurrentPosition()) / (HALF_POSITION * -1.0)), 1);
-        if (speedUpper < minSpeedUpper){
+        if (speedUpper < minSpeedUpper) {
             speedUpper = minSpeedUpper;
         }
         newTargetUpper += speedAddTargetUpper * speedCof;
+        if (! exitBorder){
+            if (newTargetUpper > Math.max(UP_POSITION, DOWN_POSITION)){
+                newTargetUpper = Math.max(UP_POSITION, DOWN_POSITION);
+            }
+            if (newTargetUpper < Math.min(UP_POSITION, DOWN_POSITION)){
+                newTargetUpper = Math.min(UP_POSITION, DOWN_POSITION);
+            }
+        }
+
 
         setTargetMotor(speedUpper, newTargetUpper, upper);
     }
@@ -281,8 +292,8 @@ public class HardwarePushbot {
 
     public void Move(double speedKof, double Y, double X, double speedTurn){
         double angel = getErrorAngel();
-        double speedToY = Y * Math.sin(angel * Math.PI / 180) * Math.sqrt(2) + X * Math.cos(angel * Math.PI / 180) * Math.sqrt(2);
-        double speedToX = Y * Math.cos(angel * Math.PI / 180) * Math.sqrt(2) - X * Math.sin(angel * Math.PI / 180) * Math.sqrt(2);
+        double speedToY = Y * Math.sin(angel * Math.PI / 180) * Math.sqrt(2) - X * Math.cos(angel * Math.PI / 180) * Math.sqrt(2);
+        double speedToX = Y * Math.cos(angel * Math.PI / 180) * Math.sqrt(2) + X * Math.sin(angel * Math.PI / 180) * Math.sqrt(2);
         double max = Math.max(Math.abs(speedToY), Math.abs(speedToX));
         if (max > 1.0) {
             speedToY /= max;
@@ -331,7 +342,7 @@ public class HardwarePushbot {
     public double getErrorAngel() {
 
         double robotError;
-        robotError = angles.firstAngle - startAngel + 45;
+        robotError = startAngel - angles.firstAngle + 45;
         while (robotError > 180) robotError -= 360;
         while (robotError <= -180) robotError += 360;
         return robotError;
@@ -342,4 +353,3 @@ public class HardwarePushbot {
     }
 
 }
-

@@ -75,8 +75,8 @@ import static org.firstinspires.ftc.robotcore.external.navigation.AxesReference.
  * is explained below.
  */
 
-@TeleOp(name="Vuforia Field Nav Webcam", group ="Concept")
-@Disabled
+@TeleOp(name="Vuforia Field Nav Webcam", group ="Pushbot")
+// @Disabled
 public class ConceptVuforiaFieldNavigationWebcam extends LinearOpMode {
 
     /*
@@ -92,7 +92,7 @@ public class ConceptVuforiaFieldNavigationWebcam extends LinearOpMode {
      * and paste it in to your code on the next line, between the double quotes.
      */
     private static final String VUFORIA_KEY =
-            " --- YOUR NEW VUFORIA KEY GOES HERE  --- ";
+            "AewpPFf/////AAABmfXkx9yGHUiZr7ZFJ6nDYVcVfABoNk4wsELqrUiJXdhdPEo8wF107tuTxRjbj6Y/S/Gx5GthjoIltMydLdQSXtm48Ni5Rx0vF50Ah5rOC5OotuuuYCYacmKrhsJbGS40fM1dD3gGxMa8zkiLr17Xl9DyTnsWyB6bIQg9ca+DxfHiv8ZjCuvfjXirnUYP/g/8gMDowg1LI70X6nMXI9fXxKWWmPj4Les0TlAVBSTc505BWlywP2QGQfaLACqzRdjQyCY7i8kngyUsGR6j5r6queOjISEsD/fqI7ix5AZT+CeepZOkCiNiEwiMV8nPltuEi+YaxxVG+7usJHLcZQNylB3CG9J0wOvASFZpUyxr1BZe";
 
     // Since ImageTarget trackables use mm to specifiy their dimensions, we must use mm for all the physical dimension.
     // We will define some constants and conversions here

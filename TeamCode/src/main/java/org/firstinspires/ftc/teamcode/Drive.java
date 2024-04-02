@@ -32,7 +32,7 @@ public class Drive extends LinearOpMode {
                           double leftTrigger, double rightTrigger, boolean holder,
                           boolean manipulatorAutoUp, boolean manipulatorAutoDown, boolean clawOpen,
                           boolean clawClose, double upperUpDown, boolean reInitEncoder,
-                          boolean setAutoGo, HardwarePushbot robot) {
+                          boolean setAutoGo, boolean exitBorder, HardwarePushbot robot) {
         boolean isReInitUpPos = (reInitEncoder && manipulatorAutoUp);
         boolean isReInitDownPos = (reInitEncoder && manipulatorAutoDown);
         if (isReInitUpPos){
@@ -66,7 +66,7 @@ public class Drive extends LinearOpMode {
                 speedTurn = (lastAngle - robot.angles.firstAngle) / Math.abs(lastAngle - robot.angles.firstAngle) * 0.2;
             }
             speedTurn = checkZone(speedTurn, k) * speedKof;
-            robot.Move(speedKof, Y, X, speedTurn);
+            robot.Move(speedKof, Y, -X, speedTurn);
         }
 
         if (holder && !holderPress){
@@ -94,7 +94,7 @@ public class Drive extends LinearOpMode {
 
         if (Math.abs(upperUpDown) > 0.1){
             autoMod = false;
-            robot.moveUpper(upperUpDown);
+            robot.moveUpper(upperUpDown, exitBorder);
         }
         else if (! autoMod){
             robot.stopUpper();
@@ -145,7 +145,7 @@ public class Drive extends LinearOpMode {
         if (kofLeft && !kofRight) {
             speed = 0.5;
         } else if (!kofLeft && kofRight) {
-            speed = 0.75;
+            speed = 0.95;
         }
         return speed;
     }
